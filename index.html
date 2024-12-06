@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>전국의 축제와 반려동물 여행지</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        button.spring { background-color: #ffcdd2; }
+        button.summer { background-color: #c8e6c9; }
+        button.fall { background-color: #ffcc80; }
+        button.winter { background-color: #b3e5fc; }
+        button.pet { background-color: #e1bee7; }
+
+        button:hover {
+            opacity: 0.8;
+            transform: translateY(-2px);
+        }
+
+        #map {
+            width: 100%;
+            height: 600px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .info-window {
+            padding: 10px;
+            width: 300px;
+        }
+
+        .info-window h4 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .info-window p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>전국의 축제와 반려동물 여행지</h1>
+        <div class="button-group">
+            <button class="spring" data-season="spring">봄</button>
+            <button class="summer" data-season="summer">여름</button>
+            <button class="fall" data-season="fall">가을</button>
+            <button class="winter" data-season="winter">겨울</button>
+            <button class="pet">반려동물</button>
+        </div>
+        <div id="map"></div>
+    </div>
+
+    <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=c136b4ff560e421918b5216517176103&libraries=clusterer"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 지도 초기화
+            const mapContainer = document.getElementById('map');
+            const mapOption = {
+                center: new kakao.maps.LatLng(36.2683, 127.6358),
+                level: 13
+            };
+            const map = new kakao.maps.Map(mapContainer, mapOption);
+
+            // 마커 클러스터러 초기화
+            const clusterer = new kakao.maps.MarkerClusterer({
+                map: map,
+                averageCenter: true,
+                minLevel: 10
+            });
+
+            let currentMarkers = [];
+
+            // 마커 초기화 함수
+            function clearMarkers() {
+                clusterer.clear();
+                currentMarkers = [];
+            }
+
+            // 계절별 날짜 범위를 반환하는 함수
+            function getSeasonDates(season) {
+                const year = new Date().getFullYear();
+                switch(season) {
+                    case 'spring':
+                        return { start: `${year}0301`, end: `${year}0531` };
+                    case 'summer':
+                        return { start: `${year}0601`, end: `${year}0831` };
+                    case 'fall':
+                        return { start: `${year}0901`, end: `${year}1130` };
+                    case 'winter':
+                        return { start: `${year}1201`, end: `${year}0228` };
+                    default:
+                        return { start: `${year}0101`, end: `${year}1231` };
+                }
+            }
+
+            // 축제 데이터 로드 함수
+            async function loadData(season) {
+                clearMarkers();
+                try {
+                    console.log('선택된 계절:', season);
+                    const dates = getSeasonDates(season);
+                    console.log('조회 기간:', dates);
+                    
+                    const response = await fetch(`http://localhost:3000/api/festival?eventStartDate=${dates.start}&eventEndDate=${dates.end}`);
+                    const data = await response.json();
+                    
+                    if (data.response?.body?.[0]?.items?.[0]?.item) {
+                        createMarkers(data.response.body[0].items[0]);
+                    } else {
+                        console.error('데이터 형식이 올바르지 않습니다:', data);
+                    }
+                } catch (error) {
+                    console.error('축제 데이터 로드 실패:', error);
+                }
+            }
+
+            // 반려동물 데이터 로드 함수
+            async function loadPetData() {
+                clearMarkers();
+                try {
+                    const response = await fetch('http://localhost:3000/api/pet');
+                    const data = await response.json();
+                    
+                    if (data.response?.body?.[0]?.items?.[0]?.item) {
+                        createPetMarkers(data.response.body[0].items[0]);
+                    } else {
+                        console.error('데이터 형식이 올바르지 않습니다:', data);
+                    }
+                } catch (error) {
+                    console.error('반려동물 데이터 로드 실패:', error);
+                }
+            }
+
+            // 마커 생성 함수 (축제)
+            function createMarkers(items) {
+                const markers = items.item.map(item => {
+                    const marker = new kakao.maps.Marker({
+                        position: new kakao.maps.LatLng(
+                            parseFloat(item.latitude[0]), 
+                            parseFloat(item.longitude[0])
+                        )
+                    });
+
+                    const infowindow = new kakao.maps.InfoWindow({
+                        content: `
+                            <div class="info-window">
+                                <h4>${item.fstvlNm[0]}</h4>
+                                <p>기간: ${item.fstvlStartDate[0]} ~ ${item.fstvlEndDate[0]}</p>
+                                <p>장소: ${item.rdnmadr[0]}</p>
+                                <p>연락처: ${item.phoneNumber[0] || '정보없음'}</p>
+                            </div>
+                        `
+                    });
+
+                    kakao.maps.event.addListener(marker, 'click', () => {
+                        infowindow.open(map, marker);
+                    });
+
+                    return marker;
+                });
+
+                clusterer.addMarkers(markers);
+            }
+
+            // 반려동물 마커 생성 함수
+            function createPetMarkers(items) {
+                const markers = items.map(item => {
+                    const marker = new kakao.maps.Marker({
+                        position: new kakao.maps.LatLng(
+                            parseFloat(item.mapy[0]),
+                            parseFloat(item.mapx[0])
+                        )
+                    });
+
+                    const infowindow = new kakao.maps.InfoWindow({
+                        content: `
+                            <div class="info-window">
+                                <h4>${item.title[0]}</h4>
+                                <p>주소: ${item.addr1[0]} ${item.addr2[0] || ''}</p>
+                                <p>연락처: ${item.tel[0] || '정보없음'}</p>
+                            </div>
+                        `
+                    });
+
+                    kakao.maps.event.addListener(marker, 'click', () => {
+                        infowindow.open(map, marker);
+                    });
+
+                    return marker;
+                });
+
+                clusterer.addMarkers(markers);
+            }
+
+            // 지도 컨트롤 추가
+            const zoomControl = new kakao.maps.ZoomControl();
+            map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
+
+            const mapTypeControl = new kakao.maps.MapTypeControl();
+            map.addControl(mapTypeControl, kakao.maps.ControlPosition.TOPRIGHT);
+
+            // 버튼 이벤트 리스너 등록
+            document.querySelectorAll('.button-group button').forEach(button => {
+                button.addEventListener('click', function() {
+                    if (this.classList.contains('pet')) {
+                        loadPetData();
+                    } else {
+                        const season = this.dataset.season;
+                        loadData(season);
+                    }
+                });
+            });
+
+            // 초기 데이터 로드 (봄 축제)
+            loadData('spring');
+        });
+    </script>
+</body>
+</html> 
