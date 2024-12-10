@@ -153,10 +153,10 @@
             async function loadData(season) {
                 clearMarkers();
                 try {
-                    const response = await fetch(`http://localhost:3000/api/festival`);
+                    const response = await fetch(`./data/festival.json`);
                     const data = await response.json();
                     
-                    console.log('버 응답:', data);
+                    console.log('서버 응답:', data);
                     
                     if (!data.success) {
                         console.error('데이터 로드 실패');
@@ -202,7 +202,7 @@
             async function loadPetData() {
                 clearMarkers();
                 try {
-                    const response = await fetch('http://localhost:3000/api/pet');
+                    const response = await fetch(`./data/pet.json`);
                     const data = await response.json();
                     
                     console.log('반려동물 API 응답:', data);
@@ -212,7 +212,6 @@
                         return;
                     }
 
-                    // data.data가 배열인지 확인
                     if (Array.isArray(data.data)) {
                         createPetMarkers(data.data);
                     } else {
