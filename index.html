@@ -59,6 +59,27 @@
         .info-window {
             padding: 10px;
             width: 300px;
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            background: #ff4444;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .close-btn:hover {
+            background: #cc0000;
         }
 
         .info-window h4 {
@@ -116,15 +137,15 @@
                 const year = new Date().getFullYear();
                 switch(season) {
                     case 'spring':
-                        return { start: `${year}0301`, end: `${year}0531` };
+                        return { start: `${year}-03-01`, end: `${year}-05-31` };
                     case 'summer':
-                        return { start: `${year}0601`, end: `${year}0831` };
+                        return { start: `${year}-06-01`, end: `${year}-08-31` };
                     case 'fall':
-                        return { start: `${year}0901`, end: `${year}1130` };
+                        return { start: `${year}-09-01`, end: `${year}-11-30` };
                     case 'winter':
-                        return { start: `${year}1201`, end: `${year}0228` };
+                        return { start: `${year}-12-01`, end: `${year + 1}-02-28` };
                     default:
-                        return { start: `${year}0101`, end: `${year}1231` };
+                        return { start: `${year}-01-01`, end: `${year}-12-31` };
                 }
             }
 
@@ -132,20 +153,48 @@
             async function loadData(season) {
                 clearMarkers();
                 try {
-                    console.log('선택된 계절:', season);
-                    const dates = getSeasonDates(season);
-                    console.log('조회 기간:', dates);
-                    
-                    const response = await fetch(`http://localhost:3000/api/festival?eventStartDate=${dates.start}&eventEndDate=${dates.end}`);
+                    const response = await fetch(`http://localhost:3000/api/festival`);
                     const data = await response.json();
                     
-                    if (data.response?.body?.[0]?.items?.[0]?.item) {
-                        createMarkers(data.response.body[0].items[0]);
-                    } else {
-                        console.error('데이터 형식이 올바르지 않습니다:', data);
+                    console.log('버 응답:', data);
+                    
+                    if (!data.success) {
+                        console.error('데이터 로드 실패');
+                        return;
                     }
+
+                    const seasonalData = data.data;
+                    let festivalsToShow = [];
+
+                    // 선택된 계절에 따라 해당 데이터 선택
+                    switch(season) {
+                        case 'spring':
+                            festivalsToShow = seasonalData.spring.slice(0, 50);
+                            break;
+                        case 'summer':
+                            festivalsToShow = seasonalData.summer.slice(0, 50);
+                            break;
+                        case 'fall':
+                            festivalsToShow = seasonalData.autumn.slice(0, 50);
+                            break;
+                        case 'winter':
+                            festivalsToShow = seasonalData.winter.slice(0, 50);
+                            break;
+                        default:
+                            console.error('잘못된 계절 선택');
+                            return;
+                    }
+
+                    if (festivalsToShow.length === 0) {
+                        console.log(`${season} 시즌에 해당하는 축제가 없습니다.`);
+                        alert(`${season} 시즌에 예정된 축제가 없습니다.`);
+                        return;
+                    }
+
+                    createMarkers(festivalsToShow);
+                    
                 } catch (error) {
-                    console.error('축제 데이터 로드 실패:', error);
+                    console.error('에러 발생:', error);
                 }
             }
 
@@ -156,11 +205,20 @@
                     const response = await fetch('http://localhost:3000/api/pet');
                     const data = await response.json();
                     
-                    if (data.response?.body?.[0]?.items?.[0]?.item) {
-                        createPetMarkers(data.response.body[0].items[0]);
+                    console.log('반려동물 API 응답:', data);
+                    
+                    if (!data.success) {
+                        console.error('데이터 로드 실패');
+                        return;
+                    }
+
+                    // data.data가 배열인지 확인
+                    if (Array.isArray(data.data)) {
+                        createPetMarkers(data.data);
                     } else {
                         console.error('데이터 형식이 올바르지 않습니다:', data);
                     }
+                    
                 } catch (error) {
                     console.error('반려동물 데이터 로드 실패:', error);
                 }
@@ -168,63 +226,99 @@
 
             // 마커 생성 함수 (축제)
             function createMarkers(items) {
-                const markers = items.item.map(item => {
+                if (!Array.isArray(items)) {
+                    console.error('items가 배열이 아닙니��:', items);
+                    return;
+                }
+
+                const markers = items.map(item => {
+                    if (!item.latitude || !item.longitude) {
+                        console.log('위치 정보가 없는 항목:', item);
+                        return null;
+                    }
+
                     const marker = new kakao.maps.Marker({
                         position: new kakao.maps.LatLng(
-                            parseFloat(item.latitude[0]), 
-                            parseFloat(item.longitude[0])
+                            parseFloat(item.latitude),
+                            parseFloat(item.longitude)
                         )
                     });
 
                     const infowindow = new kakao.maps.InfoWindow({
                         content: `
                             <div class="info-window">
-                                <h4>${item.fstvlNm[0]}</h4>
-                                <p>기간: ${item.fstvlStartDate[0]} ~ ${item.fstvlEndDate[0]}</p>
-                                <p>장소: ${item.rdnmadr[0]}</p>
-                                <p>연락처: ${item.phoneNumber[0] || '정보없음'}</p>
+                                <div class="close-btn" onclick="window.closeCurrentInfoWindow()">×</div>
+                                <h4>${item.fstvlNm}</h4>
+                                <p>기간: ${item.fstvlStartDate} ~ ${item.fstvlEndDate}</p>
+                                <p>장소: ${item.opar}</p>
+                                <p>내용: ${item.fstvlCo}</p>
+                                <p>연락처: ${item.phoneNumber || '정보없음'}</p>
+                                ${item.homepageUrl ? `<p>홈페이지: <a href="${item.homepageUrl}" target="_blank">바로가기</a></p>` : ''}
                             </div>
                         `
                     });
 
                     kakao.maps.event.addListener(marker, 'click', () => {
+                        window.closeCurrentInfoWindow = () => {
+                            infowindow.close();
+                        };
                         infowindow.open(map, marker);
                     });
 
                     return marker;
-                });
+                }).filter(marker => marker !== null);
 
-                clusterer.addMarkers(markers);
+                if (markers.length > 0) {
+                    clusterer.addMarkers(markers);
+                    console.log(`${markers.length}개의 마커가 생성되었습니다.`);
+                } else {
+                    console.log('생성된 마커가 없습니다.');
+                }
             }
 
             // 반려동물 마커 생성 함수
             function createPetMarkers(items) {
+                if (!Array.isArray(items)) {
+                    console.error('items가 배열이 아닙니다:', items);
+                    return;
+                }
+
                 const markers = items.map(item => {
                     const marker = new kakao.maps.Marker({
                         position: new kakao.maps.LatLng(
-                            parseFloat(item.mapy[0]),
-                            parseFloat(item.mapx[0])
+                            parseFloat(item.mapy),
+                            parseFloat(item.mapx)
                         )
                     });
 
                     const infowindow = new kakao.maps.InfoWindow({
                         content: `
                             <div class="info-window">
-                                <h4>${item.title[0]}</h4>
-                                <p>주소: ${item.addr1[0]} ${item.addr2[0] || ''}</p>
-                                <p>연락처: ${item.tel[0] || '정보없음'}</p>
+                                <div class="close-btn" onclick="window.closeCurrentInfoWindow()">×</div>
+                                <h4>${item.title}</h4>
+                                <p>주소: ${item.addr1} ${item.addr2 || ''}</p>
+                                <p>연락처: ${item.tel || '정보없음'}</p>
+                                ${item.homepage ? `<p>홈페이지: <a href="${item.homepage}" target="_blank">바로가기</a></p>` : ''}
                             </div>
                         `
                     });
 
                     kakao.maps.event.addListener(marker, 'click', () => {
+                        window.closeCurrentInfoWindow = () => {
+                            infowindow.close();
+                        };
                         infowindow.open(map, marker);
                     });
 
                     return marker;
                 });
 
-                clusterer.addMarkers(markers);
+                if (markers.length > 0) {
+                    clusterer.addMarkers(markers);
+                    console.log(`${markers.length}개의 반려동물 마커가 생성되었습니다.`);
+                } else {
+                    console.log('생성된 마커가 없습니다.');
+                }
             }
 
             // 지도 컨트롤 추가
@@ -248,7 +342,10 @@
 
             // 초기 데이터 로드 (봄 축제)
             loadData('spring');
+
+            // 전역에서 접근 가능하도록 window 객체에 함수 추가
+            window.closeCurrentInfoWindow = null;
         });
     </script>
 </body>
-</html> 
+</html>
