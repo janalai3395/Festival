@@ -1,350 +1,609 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>전국의 축제와 반려동물 여행지</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="계절별 전국 축제와 반려동물 동반 여행지를 지도에서 탐색하는 프로젝트입니다."
+    />
+    <title>Festival Map | 전국 축제와 반려동물 여행지</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+      :root {
+        font-family:
+          "Pretendard",
+          "Noto Sans KR",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        color: #172334;
+        background: #f6f8fb;
+        font-synthesis: none;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+      button,
+      a {
+        -webkit-tap-highlight-color: transparent;
+      }
+      button {
+        font: inherit;
+      }
+      .container {
+        width: min(1280px, calc(100% - 48px));
+        margin: 0 auto;
+        padding: 42px 0 36px;
+      }
+      .eyebrow {
+        margin: 0 0 12px;
+        font-size: 12px;
+        font-weight: 800;
+        color: #2563eb;
+        letter-spacing: 0.17em;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(27px, 3.5vw, 40px);
+        letter-spacing: -0.055em;
+        line-height: 1.3;
+      }
+      .subtitle {
+        margin: 12px 0 0;
+        color: #64748b;
+        font-size: 15px;
+        line-height: 1.75;
+      }
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin: 30px 0 16px;
+      }
+      .toolbar-label {
+        margin: 0;
+        font-size: 13px;
+        color: #64748b;
+        font-weight: 650;
+      }
+      .button-group {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .filter-btn {
+        appearance: none;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        color: #475569;
+        padding: 10px 16px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        transition:
+          background 0.15s,
+          border-color 0.15s,
+          color 0.15s,
+          transform 0.15s;
+      }
+      .filter-btn:hover {
+        border-color: #93b4f9;
+        color: #1d4ed8;
+        transform: translateY(-1px);
+      }
+      .filter-btn:focus-visible {
+        outline: 3px solid #93c5fd;
+        outline-offset: 2px;
+      }
+      .filter-btn.is-active {
+        border-color: #2563eb;
+        background: #2563eb;
+        color: #fff;
+        box-shadow: 0 5px 14px rgba(37, 99, 235, 0.16);
+      }
+      .map-shell {
+        overflow: hidden;
+        border-radius: 18px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 12px 36px rgba(24, 44, 75, 0.07);
+      }
+      .map-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 17px 20px;
+      }
+      .map-heading strong {
+        font-size: 15px;
+        letter-spacing: -0.02em;
+      }
+      .map-heading span {
+        font-size: 12px;
+        color: #64748b;
+      }
+      #map {
+        width: 100%;
+        height: min(64vw, 620px);
+        min-height: 420px;
+        background: #e8f1f7;
+      }
+      .map-footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        padding: 13px 20px;
+        font-size: 12px;
+        color: #64748b;
+        line-height: 1.6;
+      }
+      #status {
+        margin: 0;
+      }
+      .status-error {
+        color: #b91c1c !important;
+      }
+      .notice {
+        margin: 18px 0 0;
+        color: #64748b;
+        font-size: 12px;
+        line-height: 1.7;
+      }
+      .info-window {
+        position: relative;
+        width: 290px;
+        padding: 20px 18px 17px;
+        background: #fff;
+        color: #172334;
+        font-family: inherit;
+        max-height: 340px;
+        overflow-y: auto;
+        overflow-wrap: anywhere;
+      }
+      .info-window .type {
+        display: inline-block;
+        background: #eff6ff;
+        color: #1d4ed8;
+        border-radius: 999px;
+        padding: 5px 9px;
+        font-size: 11px;
+        font-weight: 750;
+        margin-bottom: 9px;
+      }
+      .info-window h4 {
+        font-size: 17px;
+        line-height: 1.45;
+        letter-spacing: -0.03em;
+        padding-right: 25px;
+        margin: 0 0 14px;
+      }
+      .info-window dl {
+        margin: 0;
+        display: grid;
+        grid-template-columns: 47px 1fr;
+        gap: 9px 10px;
+        line-height: 1.55;
+        font-size: 12px;
+      }
+      .info-window dt {
+        color: #64748b;
+        font-weight: 700;
+      }
+      .info-window dd {
+        margin: 0;
+        color: #334155;
+      }
+      .info-window .details {
+        margin: 14px 0 0;
+        padding-top: 12px;
+        border-top: 1px solid #edf2f7;
+        font-size: 12px;
+        line-height: 1.7;
+        color: #475569;
+      }
+      .info-window .details b {
+        display: block;
+        color: #64748b;
+        margin-bottom: 4px;
+      }
+      .info-window .external {
+        display: inline-flex;
+        align-items: center;
+        margin-top: 13px;
+        color: #1d4ed8;
+        font-size: 12px;
+        font-weight: 750;
+        text-decoration: none;
+      }
+      .info-window .external:hover {
+        text-decoration: underline;
+      }
+      .close-btn {
+        position: absolute;
+        top: 14px;
+        right: 13px;
+        border: 0;
+        border-radius: 50%;
+        background: #f1f5f9;
+        color: #475569;
+        cursor: pointer;
+        width: 27px;
+        height: 27px;
+        display: grid;
+        place-items: center;
+        font-size: 18px;
+        line-height: 1;
+      }
+      .close-btn:hover {
+        background: #e2e8f0;
+      }
+      @media (max-width: 640px) {
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
+          width: calc(100% - 24px);
+          padding-top: 25px;
         }
-
-        h1 {
-            text-align: center;
-            margin-bottom: 20px;
+        .toolbar {
+          margin-top: 24px;
         }
-
-        .button-group {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 20px;
+        .toolbar-label {
+          width: 100%;
         }
-
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            border: none;
-            border-radius: 5px;
-            transition: all 0.3s;
+        .filter-btn {
+          padding: 9px 13px;
+          font-size: 12px;
         }
-
-        button.spring { background-color: #ffcdd2; }
-        button.summer { background-color: #c8e6c9; }
-        button.fall { background-color: #ffcc80; }
-        button.winter { background-color: #b3e5fc; }
-        button.pet { background-color: #e1bee7; }
-
-        button:hover {
-            opacity: 0.8;
-            transform: translateY(-2px);
-        }
-
         #map {
-            width: 100%;
-            height: 600px;
-            border-radius: 10px;
-            margin-top: 20px;
+          height: 62vh;
+          min-height: 390px;
         }
-
+        .map-heading,
+        .map-footer {
+          padding-left: 14px;
+          padding-right: 14px;
+        }
+        .map-footer {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 3px;
+        }
         .info-window {
-            padding: 10px;
-            width: 300px;
-            position: relative;
+          width: 245px;
         }
-
-        .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            cursor: pointer;
-            background: #ff4444;
-            color: white;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-        }
-
-        .close-btn:hover {
-            background: #cc0000;
-        }
-
-        .info-window h4 {
-            margin-bottom: 10px;
-            color: #333;
-        }
-
-        .info-window p {
-            margin: 5px 0;
-            font-size: 14px;
-        }
+      }
     </style>
-</head>
-<body>
-    <div class="container">
-        <h1>전국의 축제와 반려동물 여행지</h1>
-        <div class="button-group">
-            <button class="spring" data-season="spring">봄</button>
-            <button class="summer" data-season="summer">여름</button>
-            <button class="fall" data-season="fall">가을</button>
-            <button class="winter" data-season="winter">겨울</button>
-            <button class="pet">반려동물</button>
+  </head>
+  <body>
+    <main class="container">
+      <header>
+        <p class="eyebrow">FESTIVAL MAP</p>
+        <h1>전국 축제 &amp; 반려동물 여행지도</h1>
+        <p class="subtitle">
+          계절별 축제와 반려동물 동반 여행지를 한눈에 살펴보세요.<br />지도
+          마커를 클릭하면 상세 정보를 확인할 수 있습니다.
+        </p>
+      </header>
+
+      <section aria-label="여행지 지도">
+        <div class="toolbar">
+          <p class="toolbar-label">관심 있는 테마를 선택해 보세요</p>
+          <div class="button-group" role="group" aria-label="지도 테마 선택">
+            <button
+              type="button"
+              class="filter-btn spring"
+              data-season="spring"
+              aria-pressed="false"
+            >
+              🌸 봄
+            </button>
+            <button
+              type="button"
+              class="filter-btn summer"
+              data-season="summer"
+              aria-pressed="false"
+            >
+              ☀️ 여름
+            </button>
+            <button
+              type="button"
+              class="filter-btn fall is-active"
+              data-season="fall"
+              aria-pressed="true"
+            >
+              🍁 가을
+            </button>
+            <button
+              type="button"
+              class="filter-btn winter"
+              data-season="winter"
+              aria-pressed="false"
+            >
+              ❄️ 겨울
+            </button>
+            <button
+              type="button"
+              class="filter-btn pet"
+              data-season="pet"
+              aria-pressed="false"
+            >
+              🐾 반려동물
+            </button>
+          </div>
         </div>
-        <div id="map"></div>
-    </div>
 
-    <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=c136b4ff560e421918b5216517176103&libraries=clusterer"></script>
+        <div class="map-shell">
+          <div class="map-heading">
+            <strong id="map-title">가을 축제 지도</strong>
+            <span>지역별 마커를 확대해 확인해 보세요</span>
+          </div>
+          <div
+            id="map"
+            role="region"
+            aria-label="전국 축제 및 여행지 지도"
+          ></div>
+          <div class="map-footer">
+            <p id="status" role="status" aria-live="polite">
+              지도와 축제 데이터를 불러오는 중입니다.
+            </p>
+            <span>카카오맵 기반 위치 시각화</span>
+          </div>
+        </div>
+        <p class="notice">
+          ※ 포트폴리오용 아카이브 데이터로, 현재 행사 일정이나 운영 여부와 다를
+          수 있습니다. 방문 전 공식 정보를 확인해 주세요.
+        </p>
+      </section>
+    </main>
+
+    <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=c136b4ff560e421918b5216517176103&libraries=clusterer"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // 지도 초기화
-            const mapContainer = document.getElementById('map');
-            const mapOption = {
-                center: new kakao.maps.LatLng(36.2683, 127.6358),
-                level: 13
-            };
-            const map = new kakao.maps.Map(mapContainer, mapOption);
+      document.addEventListener("DOMContentLoaded", function () {
+        const status = document.getElementById("status");
+        const title = document.getElementById("map-title");
+        const buttons = [...document.querySelectorAll(".filter-btn")];
+        const labels = {
+          spring: "봄 축제",
+          summer: "여름 축제",
+          fall: "가을 축제",
+          winter: "겨울 축제",
+          pet: "반려동물 여행지",
+        };
+        const seasonKeys = {
+          spring: "spring",
+          summer: "summer",
+          fall: "autumn",
+          winter: "winter",
+        };
 
-            // 마커 클러스터러 초기화
-            const clusterer = new kakao.maps.MarkerClusterer({
-                map: map,
-                averageCenter: true,
-                minLevel: 10
-            });
+        function setStatus(message, isError = false) {
+          status.textContent = message;
+          status.classList.toggle("status-error", isError);
+        }
+        function escapeHTML(value) {
+          return String(value ?? "").replace(
+            /[&<>"']/g,
+            (c) =>
+              ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;",
+              })[c],
+          );
+        }
+        function safeURL(url) {
+          if (!url || typeof url !== "string") return "";
+          try {
+            const parsed = new URL(url.trim(), location.href);
+            return ["https:", "http:"].includes(parsed.protocol)
+              ? parsed.href
+              : "";
+          } catch {
+            return "";
+          }
+        }
+        function validCoordinates(lat, lng) {
+          return (
+            Number.isFinite(lat) &&
+            Number.isFinite(lng) &&
+            Math.abs(lat) <= 90 &&
+            Math.abs(lng) <= 180 &&
+            !(lat === 0 && lng === 0)
+          );
+        }
 
-            let currentMarkers = [];
+        if (!window.kakao?.maps) {
+          setStatus(
+            "카카오맵을 불러오지 못했습니다. 네트워크와 카카오 개발자 도메인 설정을 확인해 주세요.",
+            true,
+          );
+          return;
+        }
 
-            // 마커 초기화 함수
-            function clearMarkers() {
-                clusterer.clear();
-                currentMarkers = [];
-            }
-
-            // 계절별 날짜 범위를 반환하는 함수
-            function getSeasonDates(season) {
-                const year = new Date().getFullYear();
-                switch(season) {
-                    case 'spring':
-                        return { start: `${year}-03-01`, end: `${year}-05-31` };
-                    case 'summer':
-                        return { start: `${year}-06-01`, end: `${year}-08-31` };
-                    case 'fall':
-                        return { start: `${year}-09-01`, end: `${year}-11-30` };
-                    case 'winter':
-                        return { start: `${year}-12-01`, end: `${year + 1}-02-28` };
-                    default:
-                        return { start: `${year}-01-01`, end: `${year}-12-31` };
-                }
-            }
-
-            // 축제 데이터 로드 함수
-            async function loadData(season) {
-                clearMarkers();
-                try {
-                    const response = await fetch(`./data/festival.json`);
-                    const data = await response.json();
-                    
-                    console.log('서버 응답:', data);
-                    
-                    if (!data.success) {
-                        console.error('데이터 로드 실패');
-                        return;
-                    }
-
-                    const seasonalData = data.data;
-                    let festivalsToShow = [];
-
-                    // 선택된 계절에 따라 해당 데이터 선택
-                    switch(season) {
-                        case 'spring':
-                            festivalsToShow = seasonalData.spring.slice(0, 50);
-                            break;
-                        case 'summer':
-                            festivalsToShow = seasonalData.summer.slice(0, 50);
-                            break;
-                        case 'fall':
-                            festivalsToShow = seasonalData.autumn.slice(0, 50);
-                            break;
-                        case 'winter':
-                            festivalsToShow = seasonalData.winter.slice(0, 50);
-                            break;
-                        default:
-                            console.error('잘못된 계절 선택');
-                            return;
-                    }
-
-                    if (festivalsToShow.length === 0) {
-                        console.log(`${season} 시즌에 해당하는 축제가 없습니다.`);
-                        alert(`${season} 시즌에 예정된 축제가 없습니다.`);
-                        return;
-                    }
-
-                    createMarkers(festivalsToShow);
-                    
-                } catch (error) {
-                    console.error('에러 발생:', error);
-                }
-            }
-
-            // 반려동물 데이터 로드 함수
-            async function loadPetData() {
-                clearMarkers();
-                try {
-                    const response = await fetch(`./data/pet.json`);
-                    const data = await response.json();
-                    
-                    console.log('반려동물 API 응답:', data);
-                    
-                    if (!data.success) {
-                        console.error('데이터 로드 실패');
-                        return;
-                    }
-
-                    if (Array.isArray(data.data)) {
-                        createPetMarkers(data.data);
-                    } else {
-                        console.error('데이터 형식이 올바르지 않습니다:', data);
-                    }
-                    
-                } catch (error) {
-                    console.error('반려동물 데이터 로드 실패:', error);
-                }
-            }
-
-            // 마커 생성 함수 (축제)
-            function createMarkers(items) {
-                if (!Array.isArray(items)) {
-                    console.error('items가 배열이 아닙니��:', items);
-                    return;
-                }
-
-                const markers = items.map(item => {
-                    if (!item.latitude || !item.longitude) {
-                        console.log('위치 정보가 없는 항목:', item);
-                        return null;
-                    }
-
-                    const marker = new kakao.maps.Marker({
-                        position: new kakao.maps.LatLng(
-                            parseFloat(item.latitude),
-                            parseFloat(item.longitude)
-                        )
-                    });
-
-                    const infowindow = new kakao.maps.InfoWindow({
-                        content: `
-                            <div class="info-window">
-                                <div class="close-btn" onclick="window.closeCurrentInfoWindow()">×</div>
-                                <h4>${item.fstvlNm}</h4>
-                                <p>기간: ${item.fstvlStartDate} ~ ${item.fstvlEndDate}</p>
-                                <p>장소: ${item.opar}</p>
-                                <p>내용: ${item.fstvlCo}</p>
-                                <p>연락처: ${item.phoneNumber || '정보없음'}</p>
-                                ${item.homepageUrl ? `<p>홈페이지: <a href="${item.homepageUrl}" target="_blank">바로가기</a></p>` : ''}
-                            </div>
-                        `
-                    });
-
-                    kakao.maps.event.addListener(marker, 'click', () => {
-                        window.closeCurrentInfoWindow = () => {
-                            infowindow.close();
-                        };
-                        infowindow.open(map, marker);
-                    });
-
-                    return marker;
-                }).filter(marker => marker !== null);
-
-                if (markers.length > 0) {
-                    clusterer.addMarkers(markers);
-                    console.log(`${markers.length}개의 마커가 생성되었습니다.`);
-                } else {
-                    console.log('생성된 마커가 없습니다.');
-                }
-            }
-
-            // 반려동물 마커 생성 함수
-            function createPetMarkers(items) {
-                if (!Array.isArray(items)) {
-                    console.error('items가 배열이 아닙니다:', items);
-                    return;
-                }
-
-                const markers = items.map(item => {
-                    const marker = new kakao.maps.Marker({
-                        position: new kakao.maps.LatLng(
-                            parseFloat(item.mapy),
-                            parseFloat(item.mapx)
-                        )
-                    });
-
-                    const infowindow = new kakao.maps.InfoWindow({
-                        content: `
-                            <div class="info-window">
-                                <div class="close-btn" onclick="window.closeCurrentInfoWindow()">×</div>
-                                <h4>${item.title}</h4>
-                                <p>주소: ${item.addr1} ${item.addr2 || ''}</p>
-                                <p>연락처: ${item.tel || '정보없음'}</p>
-                                ${item.homepage ? `<p>홈페이지: <a href="${item.homepage}" target="_blank">바로가기</a></p>` : ''}
-                            </div>
-                        `
-                    });
-
-                    kakao.maps.event.addListener(marker, 'click', () => {
-                        window.closeCurrentInfoWindow = () => {
-                            infowindow.close();
-                        };
-                        infowindow.open(map, marker);
-                    });
-
-                    return marker;
-                });
-
-                if (markers.length > 0) {
-                    clusterer.addMarkers(markers);
-                    console.log(`${markers.length}개의 반려동물 마커가 생성되었습니다.`);
-                } else {
-                    console.log('생성된 마커가 없습니다.');
-                }
-            }
-
-            // 지도 컨트롤 추가
-            const zoomControl = new kakao.maps.ZoomControl();
-            map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
-
-            const mapTypeControl = new kakao.maps.MapTypeControl();
-            map.addControl(mapTypeControl, kakao.maps.ControlPosition.TOPRIGHT);
-
-            // 버튼 이벤트 리스너 등록
-            document.querySelectorAll('.button-group button').forEach(button => {
-                button.addEventListener('click', function() {
-                    if (this.classList.contains('pet')) {
-                        loadPetData();
-                    } else {
-                        const season = this.dataset.season;
-                        loadData(season);
-                    }
-                });
-            });
-
-            // 초기 데이터 로드 (봄 축제)
-            loadData('spring');
-
-            // 전역에서 접근 가능하도록 window 객체에 함수 추가
-            window.closeCurrentInfoWindow = null;
+        const map = new kakao.maps.Map(document.getElementById("map"), {
+          center: new kakao.maps.LatLng(36.2683, 127.6358),
+          level: 13,
         });
+        const clusterer = new kakao.maps.MarkerClusterer({
+          map,
+          averageCenter: true,
+          minLevel: 10,
+        });
+        map.addControl(
+          new kakao.maps.ZoomControl(),
+          kakao.maps.ControlPosition.RIGHT,
+        );
+        map.addControl(
+          new kakao.maps.MapTypeControl(),
+          kakao.maps.ControlPosition.TOPRIGHT,
+        );
+
+        let openInfoWindow = null;
+        let requestToken = 0;
+        const jsonCache = new Map();
+
+        function closeInfoWindow() {
+          if (openInfoWindow) openInfoWindow.close();
+          openInfoWindow = null;
+        }
+        // 카카오맵 InfoWindow 내부의 닫기 버튼에서 호출합니다.
+        window.closeCurrentInfoWindow = closeInfoWindow;
+
+        function clearMarkers() {
+          closeInfoWindow();
+          clusterer.clear();
+        }
+
+        function infoRow(name, value) {
+          return `<dt>${escapeHTML(name)}</dt><dd>${escapeHTML(value || "정보 없음")}</dd>`;
+        }
+        function infoContent({ name, type, rows, description, url }) {
+          const href = safeURL(url);
+          const link = href
+            ? `<a class="external" href="${escapeHTML(href)}" target="_blank" rel="noopener noreferrer">공식 홈페이지 ↗</a>`
+            : "";
+          const details = description
+            ? `<p class="details"><b>소개</b>${escapeHTML(description)}</p>`
+            : "";
+          return `<div class="info-window">
+          <button type="button" class="close-btn" onclick="window.closeCurrentInfoWindow()" aria-label="상세 정보 닫기">×</button>
+          <span class="type">${escapeHTML(type)}</span>
+          <h4>${escapeHTML(name || "이름 없는 여행지")}</h4>
+          <dl>${rows.map(([key, value]) => infoRow(key, value)).join("")}</dl>
+          ${details}${link}
+        </div>`;
+        }
+
+        function addMarkers(items, isPet, theme) {
+          let skipped = 0;
+          const markers = [];
+          items.forEach((item) => {
+            const lat = Number(isPet ? item.mapy : item.latitude);
+            const lng = Number(isPet ? item.mapx : item.longitude);
+            if (!validCoordinates(lat, lng)) {
+              skipped++;
+              return;
+            }
+            const marker = new kakao.maps.Marker({
+              position: new kakao.maps.LatLng(lat, lng),
+            });
+            const content = isPet
+              ? infoContent({
+                  name: item.title,
+                  type: "🐾 반려동물 여행지",
+                  rows: [
+                    [
+                      "주소",
+                      [item.addr1, item.addr2].filter(Boolean).join(" "),
+                    ],
+                    ["연락처", item.tel],
+                  ],
+                  url: item.homepage,
+                })
+              : infoContent({
+                  name: item.fstvlNm,
+                  type: labels[theme],
+                  rows: [
+                    [
+                      "기간",
+                      [item.fstvlStartDate, item.fstvlEndDate]
+                        .filter(Boolean)
+                        .join(" ~ "),
+                    ],
+                    ["장소", item.opar],
+                    ["연락처", item.phoneNumber],
+                  ],
+                  description: item.fstvlCo,
+                  url: item.homepageUrl,
+                });
+            const info = new kakao.maps.InfoWindow({
+              content,
+              removable: false,
+            });
+            kakao.maps.event.addListener(marker, "click", () => {
+              closeInfoWindow();
+              info.open(map, marker);
+              openInfoWindow = info;
+            });
+            markers.push(marker);
+          });
+          clusterer.addMarkers(markers);
+          const count = markers.length;
+          setStatus(
+            count
+              ? `${labels[theme]} ${count}곳을 표시하고 있습니다.${skipped ? ` (좌표 누락 ${skipped}건 제외)` : ""}`
+              : `표시할 ${labels[theme]} 데이터가 없습니다.`,
+          );
+        }
+
+        async function fetchJSON(path) {
+          if (!jsonCache.has(path)) {
+            const promise = fetch(path).then(async (response) => {
+              if (!response.ok)
+                throw new Error(`HTTP ${response.status}: ${path}`);
+              return response.json();
+            });
+            jsonCache.set(path, promise);
+          }
+          try {
+            return await jsonCache.get(path);
+          } catch (error) {
+            jsonCache.delete(path);
+            throw error;
+          }
+        }
+
+        async function selectTheme(theme) {
+          const token = ++requestToken;
+          buttons.forEach((button) => {
+            const active = button.dataset.season === theme;
+            button.classList.toggle("is-active", active);
+            button.setAttribute("aria-pressed", String(active));
+          });
+          title.textContent = `${labels[theme]} 지도`;
+          clearMarkers();
+          setStatus(`${labels[theme]} 데이터를 불러오는 중입니다.`);
+          try {
+            const isPet = theme === "pet";
+            const data = await fetchJSON(
+              isPet ? "./data/pet.json" : "./data/festival.json",
+            );
+            if (token !== requestToken) return;
+            if (!data?.success)
+              throw new Error("데이터 응답의 success 값이 올바르지 않습니다.");
+            const items = isPet ? data.data : data.data?.[seasonKeys[theme]];
+            if (!Array.isArray(items))
+              throw new Error("데이터 배열 형식이 올바르지 않습니다.");
+            addMarkers(isPet ? items : items.slice(0, 50), isPet, theme);
+          } catch (error) {
+            if (token !== requestToken) return;
+            console.error("데이터 로드 오류:", error);
+            setStatus(
+              "데이터를 불러오지 못했습니다. Live Server 실행 여부와 data 폴더의 JSON 파일을 확인해 주세요.",
+              true,
+            );
+          }
+        }
+
+        buttons.forEach((button) =>
+          button.addEventListener("click", () =>
+            selectTheme(button.dataset.season),
+          ),
+        );
+        selectTheme("fall");
+      });
     </script>
-</body>
+  </body>
 </html>
